@@ -53,10 +53,11 @@ elif [ ! -L /etc/systemd/system/tailscaled.service.d ]; then
 fi
 systemctl daemon-reload
 
-# Ensure there is a post-config script to install Tailscale
+# Ensure the post-config script matches the current version
 mkdir -p /config/scripts/post-config.d
-if [ ! -x /config/scripts/post-config.d/tailscale.sh ]; then
-	cat > /config/scripts/post-config.d/tailscale.sh <<"EOF"
+post_config_script=/config/scripts/post-config.d/tailscale.sh
+post_config_tmp=$(mktemp)
+cat > "$post_config_tmp" <<"EOF"
 #!/bin/sh
 
 set -e
@@ -139,5 +140,9 @@ if [ -n "$reload" ]; then
 	systemctl --no-block restart tailscaled
 fi
 EOF
-	chmod 755 /config/scripts/post-config.d/tailscale.sh
+if ! cmp -s "$post_config_tmp" "$post_config_script"; then
+	mv "$post_config_tmp" "$post_config_script"
+	chmod 755 "$post_config_script"
+else
+	rm -f "$post_config_tmp"
 fi
