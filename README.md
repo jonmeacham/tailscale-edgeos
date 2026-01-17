@@ -34,7 +34,7 @@ This was originally inspired by [lg](https://github.com/lg)'s [gist](https://gis
     ```sh
     sudo bash
     mkdir -p /config/scripts/firstboot.d
-    curl -o /config/scripts/firstboot.d/tailscale.sh https://raw.githubusercontent.com/jamesog/tailscale-edgeos/main/firstboot.d/tailscale.sh
+    curl -o /config/scripts/firstboot.d/tailscale.sh https://raw.githubusercontent.com/jomeacha/tailscale-edgeos/main/firstboot.d/tailscale.sh
     chmod 755 /config/scripts/firstboot.d/tailscale.sh
     /config/scripts/firstboot.d/tailscale.sh
     /config/scripts/post-config.d/tailscale.sh
@@ -55,7 +55,7 @@ This was originally inspired by [lg](https://github.com/lg)'s [gist](https://gis
     1. Fetch the override unit
 
         ```sh
-        curl -o /config/tailscale/systemd/tailscaled.service.d/before-ssh.conf https://raw.githubusercontent.com/jamesog/tailscale-edgeos/main/systemd/tailscaled.service.d/before-ssh.conf
+        curl -o /config/tailscale/systemd/tailscaled.service.d/before-ssh.conf https://raw.githubusercontent.com/jomeacha/tailscale-edgeos/main/systemd/tailscaled.service.d/before-ssh.conf
         systemctl daemon-reload
         ```
 

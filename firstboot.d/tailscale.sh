@@ -2,8 +2,10 @@
 
 set -e
 
-sed -i 's|^mozilla\/DST_Root_CA_X3\.crt|!mozilla/DST_Root_CA_X3.crt|' /etc/ca-certificates.conf
-update-ca-certificates --fresh
+if grep -q '^mozilla/DST_Root_CA_X3\.crt$' /etc/ca-certificates.conf; then
+	sed -i 's|^mozilla\/DST_Root_CA_X3\.crt|!mozilla/DST_Root_CA_X3.crt|' /etc/ca-certificates.conf
+	update-ca-certificates --fresh
+fi
 
 mkdir -p /config/tailscale/systemd/tailscaled.service.d
 mkdir -p /config/tailscale/state
@@ -34,13 +36,20 @@ fi
 if [ ! -f /config/tailscale/systemd/tailscaled.service.d/wait-for-networking.conf ]; then
 	cat > /config/tailscale/systemd/tailscaled.service.d/wait-for-networking.conf <<-EOF
 [Unit]
-Wants=vyatta-router.service
-After=vyatta-router.service
+Wants=vyatta-router.service network-online.target
+After=vyatta-router.service network-online.target
 	EOF
 fi
 
-if [ ! -L /etc/systemd/system/tailscaled.service.d ]; then
+if [ ! -e /etc/systemd/system/tailscaled.service.d ]; then
 	ln -s /config/tailscale/systemd/tailscaled.service.d /etc/systemd/system/tailscaled.service.d
+elif [ ! -L /etc/systemd/system/tailscaled.service.d ]; then
+	# Fall back to copying drop-ins if the directory already exists.
+	mkdir -p /etc/systemd/system/tailscaled.service.d
+	for unit in /config/tailscale/systemd/tailscaled.service.d/*.conf; do
+		[ -e "$unit" ] || continue
+		cp "$unit" /etc/systemd/system/tailscaled.service.d/
+	done
 fi
 systemctl daemon-reload
 
@@ -62,9 +71,18 @@ if [ ! -f /etc/systemd/system/var-lib-tailscale.mount ]; then
 	reload=y
 fi
 
-if [ ! -L /etc/systemd/system/tailscaled.service.d ]; then
+if [ ! -e /etc/systemd/system/tailscaled.service.d ]; then
 	ln -s /config/tailscale/systemd/tailscaled.service.d /etc/systemd/system/tailscaled.service.d
 	reload=y
+elif [ ! -L /etc/systemd/system/tailscaled.service.d ]; then
+	mkdir -p /etc/systemd/system/tailscaled.service.d
+	for unit in /config/tailscale/systemd/tailscaled.service.d/*.conf; do
+		[ -e "$unit" ] || continue
+		if [ ! -f /etc/systemd/system/tailscaled.service.d/$(basename "$unit") ]; then
+			cp "$unit" /etc/systemd/system/tailscaled.service.d/
+			reload=y
+		fi
+	done
 fi
 
 if [ -n "$reload" ]; then
@@ -73,11 +91,14 @@ if [ -n "$reload" ]; then
 fi
 
 KEYRING=/usr/share/keyrings/tailscale-stretch-stable.gpg
+mkdir -p /usr/share/keyrings
 
 if ! gpg --list-keys --with-colons --keyring $KEYRING 2>/dev/null | grep -qF info@tailscale.com; then
 	echo Installing Tailscale repository signing key
 	if [ ! -e /config/tailscale/stretch.gpg ]; then
-		curl -fsSL https://pkgs.tailscale.com/stable/debian/stretch.asc | gpg --dearmor > /config/tailscale/stretch.gpg
+		curl -fsSL https://pkgs.tailscale.com/stable/debian/stretch.asc -o /config/tailscale/stretch.asc
+		gpg --dearmor < /config/tailscale/stretch.asc > /config/tailscale/stretch.gpg
+		rm -f /config/tailscale/stretch.asc
 	fi
 	cp /config/tailscale/stretch.gpg $KEYRING
 fi
@@ -92,7 +113,7 @@ if ! echo $pkg_status| grep -qF "install ok installed"; then
 	else
 		echo "Installing Tailscale"
 		apt-get update
-		apt-get install tailscale
+		DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tailscale
 		mkdir -p /config/data/firstboot/install-packages
 		cp /var/cache/apt/archives/tailscale_*.deb /config/data/firstboot/install-packages
 	fi
