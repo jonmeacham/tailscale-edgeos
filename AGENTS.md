@@ -105,7 +105,33 @@ Anything less than this structure is incomplete.
 
 ---
 
-## 5. Idempotency Requirements
+## 5. Avoid Premature Script Exits
+
+In non-interactive scripts, `exit` inside a `configure` session will terminate
+the script. If you need to continue after applying configuration, wrap the
+configure block in a subshell:
+
+```bash
+(
+  configure
+  set system host-name edge01
+  if ! commit; then
+    echo "ERROR: Commit failed" >&2
+    exit 1
+  fi
+  save
+  exit
+)
+
+# Continue with non-configuration steps here.
+```
+
+If you do not need to continue after configuration, a standalone configure
+block is fine.
+
+---
+
+## 6. Idempotency Requirements
 
 EdgeOS `set` commands are **idempotent by default**.
 
@@ -127,7 +153,7 @@ fi
 
 ---
 
-## 6. Bulk Configuration Handling
+## 7. Bulk Configuration Handling
 
 ### Preferred: `load merge`
 
@@ -159,7 +185,7 @@ Only allowed when:
 
 ---
 
-## 7. Remote Automation (SSH)
+## 8. Remote Automation (SSH)
 
 Remote configuration **must** preserve transaction boundaries.
 
@@ -181,7 +207,7 @@ ssh admin@router "set system ntp server 1.pool.ntp.org"
 
 ---
 
-## 8. Commit Safety
+## 9. Commit Safety
 
 ### Use commit confirmation when modifying networking
 
@@ -199,7 +225,7 @@ save
 
 ---
 
-## 9. Error Handling Rules
+## 10. Error Handling Rules
 
 Scripts **must**:
 - Check `commit` return codes
@@ -216,7 +242,7 @@ fi
 
 ---
 
-## 10. Logging and Debugging
+## 11. Logging and Debugging
 
 Recommended:
 - Echo major stages
