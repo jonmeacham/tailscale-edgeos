@@ -39,8 +39,15 @@ exit
 
 echo "Installing firstboot and post-config scripts"
 mkdir -p /config/scripts/firstboot.d
-curl -fsSL -o /config/scripts/firstboot.d/tailscale.sh "$TS_FIRSTBOOT_URL"
-chmod 755 /config/scripts/firstboot.d/tailscale.sh
+firstboot_script=/config/scripts/firstboot.d/tailscale.sh
+firstboot_tmp=$(mktemp)
+curl -fsSL -o "$firstboot_tmp" "$TS_FIRSTBOOT_URL"
+if ! cmp -s "$firstboot_tmp" "$firstboot_script"; then
+	mv "$firstboot_tmp" "$firstboot_script"
+	chmod 755 "$firstboot_script"
+else
+	rm -f "$firstboot_tmp"
+fi
 /config/scripts/firstboot.d/tailscale.sh
 /config/scripts/post-config.d/tailscale.sh
 

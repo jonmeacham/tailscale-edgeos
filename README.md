@@ -9,8 +9,9 @@ This was originally inspired by [lg](https://github.com/lg)'s [gist](https://gis
 ### Automated setup (recommended)
 
 Use the setup script to handle the manual steps from this guide. It configures
-the Tailscale apt repository, installs the firstboot/post-config scripts, and
-optionally runs `tailscale up` and configures `sshd` listening addresses.
+the Tailscale apt repository, installs or refreshes the firstboot/post-config
+scripts, and optionally runs `tailscale up` and configures `sshd` listening
+addresses.
 
 ```sh
 sudo -i
@@ -56,16 +57,17 @@ TAILSCALE_SSH_LISTEN_ADDRESSES="100.x.y.z 192.168.1.1" \
 2. Create required directories and download and run firstboot script
 
     Scripts in the `firstboot.d` directory are run after firmware upgrades.
-    This script ensures that the Tailscale daemon's state is symlinked to
-    `/config` so it persists across firmware upgrades (otherwise you'll have to
-    set up as a new device on every upgrade) and installs a `post-config.d`
-    script to ensure Tailscale is installed after each boot.
+This script ensures that the Tailscale daemon's state is symlinked to
+`/config` so it persists across firmware upgrades (otherwise you'll have to
+set up as a new device on every upgrade) and installs (or refreshes) a
+`post-config.d` script to ensure Tailscale is installed after each boot.
 
-    The `post-config.d` script also copies the Debian package to
-    `/config/data/firstboot/install-packages` so the package can be installed
-    during `firstboot` after a firmware upgrade to ensure the package gets
-    installed and doesn't require downloading it again. This also means the
-    same version will be consistently installed.
+The `post-config.d` script also copies the Debian package to
+`/config/data/firstboot/install-packages` so the package can be installed
+during `firstboot` after a firmware upgrade to ensure the package gets
+installed and doesn't require downloading it again. When it installs or
+upgrades Tailscale, it refreshes the cached package to match the latest
+available version.
 
     ```sh
     sudo bash
