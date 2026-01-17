@@ -15,9 +15,9 @@ optionally runs `tailscale up` and configures `sshd` listening addresses.
 ```sh
 sudo -i
 mkdir -p /config/scripts
-curl -fsSL -o /config/scripts/tailscale-setup.sh https://raw.githubusercontent.com/jonmeacham/tailscale-edgeos/main/setup.sh
-chmod 755 /config/scripts/tailscale-setup.sh
-/config/scripts/tailscale-setup.sh
+curl -fsSL -o /config/scripts/tailscale-install.sh https://raw.githubusercontent.com/jonmeacham/tailscale-edgeos/main/install.sh
+chmod 755 /config/scripts/tailscale-install.sh
+/config/scripts/tailscale-install.sh
 ```
 
 Optional environment variables:
@@ -37,7 +37,7 @@ TAILSCALE_ADVERTISE_ROUTES=192.0.2.0/24 \
 TAILSCALE_ADVERTISE_EXIT_NODE=1 \
 TAILSCALE_SSH_OVERRIDE=1 \
 TAILSCALE_SSH_LISTEN_ADDRESSES="100.x.y.z 192.168.1.1" \
-/config/scripts/tailscale-setup.sh
+/config/scripts/tailscale-install.sh
 ```
 
 ### Manual steps
