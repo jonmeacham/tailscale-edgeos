@@ -13,29 +13,31 @@ TS_FIRSTBOOT_URL="https://raw.githubusercontent.com/jonmeacham/tailscale-edgeos/
 TS_SSH_OVERRIDE_URL="https://raw.githubusercontent.com/jonmeacham/tailscale-edgeos/main/systemd/tailscaled.service.d/before-ssh.conf"
 
 echo "Configuring Tailscale package repository"
-configure
-set system package repository tailscale url "$TS_REPO_URL"
-set system package repository tailscale distribution stretch
-set system package repository tailscale components main
+(
+	configure
+	set system package repository tailscale url "$TS_REPO_URL"
+	set system package repository tailscale distribution stretch
+	set system package repository tailscale components main
 
-if [ -n "${TAILSCALE_SSH_LISTEN_ADDRESSES:-}" ]; then
-	for addr in ${TAILSCALE_SSH_LISTEN_ADDRESSES//,/ }; do
-		set service ssh listen-address "$addr"
-	done
-	if ! commit-confirm 5; then
-		echo "ERROR: Commit failed" >&2
-		exit 1
+	if [ -n "${TAILSCALE_SSH_LISTEN_ADDRESSES:-}" ]; then
+		for addr in ${TAILSCALE_SSH_LISTEN_ADDRESSES//,/ }; do
+			set service ssh listen-address "$addr"
+		done
+		if ! commit-confirm 5; then
+			echo "ERROR: Commit failed" >&2
+			exit 1
+		fi
+		run confirm
+	else
+		if ! commit; then
+			echo "ERROR: Commit failed" >&2
+			exit 1
+		fi
 	fi
-	run confirm
-else
-	if ! commit; then
-		echo "ERROR: Commit failed" >&2
-		exit 1
-	fi
-fi
 
-save
-exit
+	save
+	exit
+)
 
 echo "Installing firstboot and post-config scripts"
 mkdir -p /config/scripts/firstboot.d
