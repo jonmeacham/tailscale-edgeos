@@ -114,13 +114,15 @@ TAILSCALE_SSH_LISTEN_ADDRESSES="100.x.y.z 192.168.1.1" \
 After an EdgeOS upgrade third-party packages are no longer installed, but the
 `firstboot` script described above ensures Tailscale gets reinstalled.
 
-Note that it will install the Tailscale version from the first time the
-`post-config.d` script ran. If you had upgraded Tailscale since you will need
-to re-upgrade it.
+The `post-config.d` script checks the Tailscale repository and installs or
+upgrades to the latest available version using per-package installs (never
+`apt-get upgrade`), so the restored package stays current.
 
 ## Upgrading Tailscale
 
 Upgrading is straightforward as the package manager will do everything for you.
+The `post-config.d` script also checks for updates on boot and will install the
+latest available Tailscale package using per-package installs.
 
 **Note:** DO NOT USE `apt-get upgrade`. This is not supported on EdgeOS and may
 result in a broken system.

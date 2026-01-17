@@ -110,13 +110,29 @@ if ! echo $pkg_status| grep -qF "install ok installed"; then
 		# Use systemd-run to configure the package in a separate unit, otherwise it will block
 		# due to tailscaled.service waiting on vyatta-router.service, which is running this script.
 		systemd-run --no-block dpkg --configure -a
-	else
-		echo "Installing Tailscale"
-		apt-get update
-		DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tailscale
-		mkdir -p /config/data/firstboot/install-packages
-		cp /var/cache/apt/archives/tailscale_*.deb /config/data/firstboot/install-packages
 	fi
+fi
+
+# Note: do not use `apt-get upgrade` on EdgeOS; install specific packages instead.
+echo "Checking for the latest Tailscale package"
+apt-get update
+candidate_version=$(apt-cache policy tailscale 2>/dev/null | awk '/Candidate:/ {print $2; exit}')
+installed_version=$(dpkg-query -W -f='${Version}' tailscale 2>/dev/null || true)
+
+if [ -z "$candidate_version" ] || [ "$candidate_version" = "(none)" ]; then
+	echo "No candidate Tailscale package found; skipping install/upgrade"
+elif [ -z "$installed_version" ]; then
+	echo "Installing Tailscale"
+	DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tailscale
+	mkdir -p /config/data/firstboot/install-packages
+	cp /var/cache/apt/archives/tailscale_*.deb /config/data/firstboot/install-packages
+elif [ "$installed_version" != "$candidate_version" ]; then
+	echo "Upgrading Tailscale from $installed_version to $candidate_version"
+	DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tailscale
+	mkdir -p /config/data/firstboot/install-packages
+	cp /var/cache/apt/archives/tailscale_*.deb /config/data/firstboot/install-packages
+else
+	echo "Tailscale is already up to date ($installed_version)"
 fi
 
 if [ -n "$reload" ]; then
