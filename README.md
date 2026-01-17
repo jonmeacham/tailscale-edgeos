@@ -179,11 +179,48 @@ fi
 
 ## Uninstalling
 
+### Automated uninstall (recommended)
+
+Use the uninstall script to remove the package, systemd overrides, scripts,
+cached packages, and the EdgeOS repository configuration.
+
+```sh
+sudo -i
+mkdir -p /config/scripts
+curl -fsSL -o /config/scripts/tailscale-uninstall.sh https://raw.githubusercontent.com/jonmeacham/tailscale-edgeos/main/uninstall.sh
+chmod 755 /config/scripts/tailscale-uninstall.sh
+/config/scripts/tailscale-uninstall.sh
 ```
-sudo apt-get purge tailscale
-sudo rm /config/scripts/firstboot.d/tailscale.sh /config/scripts/post-config.d/tailscale.sh
-configure
-delete system package repository tailscale
-commit comment "Remove Tailscale repository"
-save; exit
-```
+
+### Manual steps
+
+1. Stop the daemon and uninstall the package
+
+    ```sh
+    sudo -i
+    systemctl stop tailscaled
+    umount /var/lib/tailscale || true
+    apt-get purge -y tailscale
+    ```
+
+2. Remove scripts, overrides, and cached packages
+
+    ```sh
+    rm -f /config/scripts/firstboot.d/tailscale.sh /config/scripts/post-config.d/tailscale.sh
+    rm -f /etc/systemd/system/var-lib-tailscale.mount
+    rm -rf /etc/systemd/system/tailscaled.service.d
+    rm -rf /config/tailscale
+    rm -f /config/data/firstboot/install-packages/tailscale_*.deb
+    systemctl daemon-reload
+    ```
+
+3. Remove the Tailscale repository
+
+    ```
+    configure
+    delete system package repository tailscale
+    commit comment "Remove Tailscale repository"
+    save; exit
+    ```
+
+4. (Optional) Remove any `sshd` listen-address entries you added for Tailscale
