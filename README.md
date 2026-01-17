@@ -6,6 +6,41 @@ This was originally inspired by [lg](https://github.com/lg)'s [gist](https://gis
 
 ## Installing Tailscale
 
+### Automated setup (recommended)
+
+Use the setup script to handle the manual steps from this guide. It configures
+the Tailscale apt repository, installs the firstboot/post-config scripts, and
+optionally runs `tailscale up` and configures `sshd` listening addresses.
+
+```sh
+sudo -i
+mkdir -p /config/scripts
+curl -fsSL -o /config/scripts/tailscale-setup.sh https://raw.githubusercontent.com/jonmeacham/tailscale-edgeos/main/setup.sh
+chmod 755 /config/scripts/tailscale-setup.sh
+```
+
+Optional environment variables:
+
+- `TAILSCALE_AUTHKEY` - pre-auth key for `tailscale up`
+- `TAILSCALE_ADVERTISE_ROUTES` - e.g. `192.0.2.0/24`
+- `TAILSCALE_ADVERTISE_EXIT_NODE` - set to `1` to advertise exit node
+- `TAILSCALE_UP_EXTRA_ARGS` - extra `tailscale up` flags
+- `TAILSCALE_SSH_OVERRIDE` - set to `1` to install `before-ssh.conf`
+- `TAILSCALE_SSH_LISTEN_ADDRESSES` - space/comma-separated list of addresses
+
+Example:
+
+```sh
+TAILSCALE_AUTHKEY=tskey-XXX \
+TAILSCALE_ADVERTISE_ROUTES=192.0.2.0/24 \
+TAILSCALE_ADVERTISE_EXIT_NODE=1 \
+TAILSCALE_SSH_OVERRIDE=1 \
+TAILSCALE_SSH_LISTEN_ADDRESSES="100.x.y.z 192.168.1.1" \
+/config/scripts/tailscale-setup.sh
+```
+
+### Manual steps
+
 1. Configure the Tailscale apt repository
 
     ```
@@ -34,7 +69,7 @@ This was originally inspired by [lg](https://github.com/lg)'s [gist](https://gis
     ```sh
     sudo bash
     mkdir -p /config/scripts/firstboot.d
-    curl -o /config/scripts/firstboot.d/tailscale.sh https://raw.githubusercontent.com/jomeacha/tailscale-edgeos/main/firstboot.d/tailscale.sh
+    curl -o /config/scripts/firstboot.d/tailscale.sh https://raw.githubusercontent.com/jonmeacham/tailscale-edgeos/main/firstboot.d/tailscale.sh
     chmod 755 /config/scripts/firstboot.d/tailscale.sh
     /config/scripts/firstboot.d/tailscale.sh
     /config/scripts/post-config.d/tailscale.sh
@@ -55,7 +90,7 @@ This was originally inspired by [lg](https://github.com/lg)'s [gist](https://gis
     1. Fetch the override unit
 
         ```sh
-        curl -o /config/tailscale/systemd/tailscaled.service.d/before-ssh.conf https://raw.githubusercontent.com/jomeacha/tailscale-edgeos/main/systemd/tailscaled.service.d/before-ssh.conf
+        curl -o /config/tailscale/systemd/tailscaled.service.d/before-ssh.conf https://raw.githubusercontent.com/jonmeacham/tailscale-edgeos/main/systemd/tailscaled.service.d/before-ssh.conf
         systemctl daemon-reload
         ```
 
