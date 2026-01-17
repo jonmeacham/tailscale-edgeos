@@ -17,6 +17,7 @@ sudo -i
 mkdir -p /config/scripts
 curl -fsSL -o /config/scripts/tailscale-setup.sh https://raw.githubusercontent.com/jonmeacham/tailscale-edgeos/main/setup.sh
 chmod 755 /config/scripts/tailscale-setup.sh
+/config/scripts/tailscale-setup.sh
 ```
 
 Optional environment variables:
@@ -170,9 +171,10 @@ If you have a **certificate error** when upgrading, unfortunately it is an [Edge
 
 ```
 sudo -i
-sed -i 's|^mozilla\/DST_Root_CA_X3\.crt|!mozilla/DST_Root_CA_X3.crt|' /etc/ca-certificates.conf
-curl -sk https://letsencrypt.org/certs/isrgrootx1.pem -o /usr/local/share/ca-certificates/ISRG_Root_X1.crt
-update-ca-certificates --fresh
+if grep -q '^mozilla/DST_Root_CA_X3\.crt$' /etc/ca-certificates.conf; then
+  sed -i 's|^mozilla\/DST_Root_CA_X3\.crt|!mozilla/DST_Root_CA_X3.crt|' /etc/ca-certificates.conf
+  update-ca-certificates --fresh
+fi
 ```
 
 ## Uninstalling
