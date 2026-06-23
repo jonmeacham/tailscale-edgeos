@@ -146,23 +146,20 @@ If you consider this version to be "stable" for your use-cases you should think
 about copying the package to flash memory so it survives firmware upgrades,
 otherwise an older version may get installed.
 
-First check if old packages are saved:
+The install scripts retain the installed package automatically and prune older
+saved versions. To do the same manually:
 
 ```
 sudo bash
-ls -l /config/data/firstboot/install-packages
-```
-
-If old versions exist delete them, e.g.
-
-```
-rm /config/data/firstboot/install-packages/tailscale_1.6.0_mips.deb
-```
-
-Then copy the latest version:
-
-```
-cp /var/cache/apt/archives/tailscale_*.deb /config/data/firstboot/install-packages
+package_dir=/config/data/firstboot/install-packages
+version=$(dpkg-query -W -f='${Version}' tailscale)
+latest_pkg=$(basename /var/cache/apt/archives/tailscale_"$version"_*.deb)
+mkdir -p "$package_dir"
+cp /var/cache/apt/archives/tailscale_"$version"_*.deb "$package_dir"/
+for pkg in "$package_dir"/tailscale_*.deb; do
+    [ "$(basename "$pkg")" = "$latest_pkg" ] && continue
+    rm -f "$pkg"
+done
 ```
 
 If you still receive an **out of space** error when upgrading, try cleaning the system's images using:

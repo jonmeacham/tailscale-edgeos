@@ -120,20 +120,48 @@ apt-get update
 candidate_version=$(apt-cache policy tailscale 2>/dev/null | awk '/Candidate:/ {print $2; exit}')
 installed_version=$(dpkg-query -W -f='${Version}' tailscale 2>/dev/null || true)
 
+retain_tailscale_package() {
+	package_dir=/config/data/firstboot/install-packages
+	installed_version=$(dpkg-query -W -f='${Version}' tailscale 2>/dev/null || true)
+	if [ -z "$installed_version" ]; then
+		echo "WARNING: Tailscale installed version not found; skipping package retention" >&2
+		return
+	fi
+
+	set -- /var/cache/apt/archives/tailscale_"$installed_version"_*.deb
+	if [ -e "$1" ]; then
+		mkdir -p "$package_dir"
+		cp "$1" "$package_dir/"
+		retained_pkg=$package_dir/$(basename "$1")
+	else
+		set -- "$package_dir"/tailscale_"$installed_version"_*.deb
+		if [ ! -e "$1" ]; then
+			echo "WARNING: Tailscale package for $installed_version not found; skipping package retention" >&2
+			return
+		fi
+		retained_pkg=$1
+	fi
+
+	for pkg in "$package_dir"/tailscale_*.deb; do
+		[ -e "$pkg" ] || continue
+		[ "$pkg" = "$retained_pkg" ] && continue
+		rm -f "$pkg"
+	done
+}
+
 if [ -z "$candidate_version" ] || [ "$candidate_version" = "(none)" ]; then
 	echo "No candidate Tailscale package found; skipping install/upgrade"
 elif [ -z "$installed_version" ]; then
 	echo "Installing Tailscale"
 	DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tailscale
-	mkdir -p /config/data/firstboot/install-packages
-	cp /var/cache/apt/archives/tailscale_*.deb /config/data/firstboot/install-packages
+	retain_tailscale_package
 elif [ "$installed_version" != "$candidate_version" ]; then
 	echo "Upgrading Tailscale from $installed_version to $candidate_version"
 	DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tailscale
-	mkdir -p /config/data/firstboot/install-packages
-	cp /var/cache/apt/archives/tailscale_*.deb /config/data/firstboot/install-packages
+	retain_tailscale_package
 else
 	echo "Tailscale is already up to date ($installed_version)"
+	retain_tailscale_package
 fi
 
 if [ -n "$reload" ]; then
